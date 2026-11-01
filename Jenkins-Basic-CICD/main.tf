@@ -108,7 +108,7 @@ resource "aws_instance" "ec2"{
     subnet_id = aws_subnet.Private.id
     vpc_security_group_ids = [aws_security_group.sg.id]
     tags={
-        Name = "Dev"
+        Name = "Dev-2"
     }
 }
 
@@ -119,6 +119,6 @@ resource "aws_instance" "ec2"{
     subnet_id = aws_subnet.Private.id
     vpc_security_group_ids = [aws_security_group.sg.id]
     tags={
-        Name = "web-hooks-check"
+        Name = "web-hooks-check-1"
     }
 }
