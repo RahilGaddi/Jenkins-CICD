@@ -1,0 +1,7 @@
+vpc_cidr = "10.0.0.0/16"
+subnet_cidr = "10.0.1.0/24"
+subnet_cidr_private = "10.0.2.0/24"
+route_table = "0.0.0.0/0"
+route_table_private = "0.0.0.0/0"
+sg = "0.0.0.0/0"
+ami = "ami-073f45061d35c86f0"
