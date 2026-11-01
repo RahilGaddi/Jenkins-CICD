@@ -101,7 +101,7 @@ resource "aws_security_group" "sg"{
   }
 }
 
-resource "aws_instance" "ec2"{
+resource "aws_instance" "ec2-1"{
     ami = var.ami
     instance_type = "t2.medium"
     availability_zone      = "us-west-2a"
