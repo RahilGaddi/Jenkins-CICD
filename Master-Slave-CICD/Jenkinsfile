@@ -1,0 +1,18 @@
+pipeline {
+    agent {
+        label 'Agent-1'
+    }
+
+    stages {
+        stage('Verify Agent') {
+            steps {
+                sh 'echo "Running on Jenkins Agent"'
+                sh 'hostname'
+                sh 'whoami'
+                sh 'git --version'
+                sh 'terraform --version'
+                sh 'python3 --version'
+            }
+        }
+    }
+}
