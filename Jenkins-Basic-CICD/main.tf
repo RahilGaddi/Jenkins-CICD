@@ -8,6 +8,8 @@ resource "aws_vpc" "main"{
 resource "aws_subnet" "Public"{
     vpc_id = aws_vpc.main.id
     cidr_block = var.subnet_cidr
+
+      map_public_ip_on_launch = true
     tags={
         Name = "Public-1"
         Type = "Public"
@@ -25,16 +27,27 @@ resource "aws_subnet" "Private"{
 }
 
 resource "aws_internet_gateway" "igw"{
-    vpc_id= aws.vpc.main.id
+    vpc_id= aws_vpc.main.id
     tags={
         Name = "IGW"
     }
 }
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name = "NAT-EIP"
+  }
+}
 
 resource "aws_nat_gateway" "nat" {
-    subnet_id = aws_subnet.Public.id
-    tags = {
-        Name = "NAT"
+      allocation_id = aws_eip.nat.id
+      subnet_id = aws_subnet.Public.id
+
+       depends_on = [aws_internet_gateway.igw]
+    
+       tags = {
+          Name = "NAT"
     }
 }
 resource "aws_route_table" "public"{
@@ -48,8 +61,8 @@ resource "aws_route_table" "public"{
         Name = "Public-Route-Table"
     }
 }
-resource "aws_association" "public"{
-    subnet_id = aws_subnet.public.id
+resource "aws_route_table_association" "public"{
+    subnet_id = aws_subnet.Public.id
     route_table_id = aws_route_table.public.id
 }
 
@@ -63,8 +76,8 @@ resource "aws_route_table" "private"{
         Name = "Private-Route-Table"
     }
 }
-resource "aws_association" "private"{
-    subnet_id = aws_subnet.private.id
+resource "aws_route_table_association" "private"{
+    subnet_id = aws_subnet.Private.id
     route_table_id = aws_route_table.private.id
 }
 
@@ -79,6 +92,12 @@ resource "aws_security_group" "sg"{
         protocol = "-1"
         cidr_blocks = [var.sg]
     }
+      egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_instance" "ec2"{
