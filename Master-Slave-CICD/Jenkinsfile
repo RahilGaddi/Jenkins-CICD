@@ -22,15 +22,18 @@ pipeline {
             }
         }
 
-        stage('Validate Python') {
-            steps {
-                sh '''
-                    set -eu
-                    python3 --version
-                    python3 -m py_compile lambda/lambda_function.py
-                '''
-            }
-        }
+       
+stage('Validate Python') {
+    steps {
+        sh '''
+            set -eu
+            python3 --version
+            python3 -m py_compile \
+              Master-Slave-CICD/lambda/lambda_function.py
+        '''
+    }
+}
+
 
         stage('Verify AWS Access') {
             steps {
@@ -42,15 +45,19 @@ pipeline {
             }
         }
 
-        stage('Package Lambda') {
-            steps {
-                sh '''
-                    set -eu
-                    cd lambda
-                    zip -j ../lambda-deployment.zip lambda_function.py
-                '''
-            }
-        }
+       
+stage('Package Lambda') {
+    steps {
+        sh '''
+            set -eu
+            cd Master-Slave-CICD/lambda
+            zip -j ../../lambda-deployment.zip lambda_function.py
+            test -s ../../lambda-deployment.zip
+            echo "Lambda package created successfully"
+        '''
+    }
+}
+
 
         stage('Create or Update Lambda') {
             steps {
