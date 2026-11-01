@@ -1,18 +1,135 @@
+
 pipeline {
-    agent {
-        label 'Agent-1'
+    agent { label 'Agent-1' }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(time: 15, unit: 'MINUTES')
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'us-west-2'
+        LAMBDA_FUNCTION   = 'ec2-health-check'
+        LAMBDA_HANDLER    = 'lambda_function.lambda_handler'
+        LAMBDA_RUNTIME    = 'python3.12'
+        INSTANCE_ID       = 'i-0729ed62464d80e8b'
     }
 
     stages {
-        stage('Verify Agent') {
+        stage('Checkout') {
             steps {
-                sh 'echo "Running on Jenkins Agent"'
-                sh 'hostname'
-                sh 'whoami'
-                sh 'git --version'
-                sh 'terraform --version'
-                sh 'python3 --version'
+                checkout scm
             }
+        }
+
+        stage('Validate Python') {
+            steps {
+                sh '''
+                    set -eu
+                    python3 --version
+                    python3 -m py_compile lambda/lambda_function.py
+                '''
+            }
+        }
+
+        stage('Verify AWS Access') {
+            steps {
+                sh '''
+                    set -eu
+                    aws sts get-caller-identity
+                    aws configure list
+                '''
+            }
+        }
+
+        stage('Package Lambda') {
+            steps {
+                sh '''
+                    set -eu
+                    cd lambda
+                    zip -j ../lambda-deployment.zip lambda_function.py
+                '''
+            }
+        }
+
+        stage('Create or Update Lambda') {
+            steps {
+                sh '''
+                    set -eu
+
+                    if aws lambda get-function \
+                        --function-name "$LAMBDA_FUNCTION" \
+                        >/dev/null 2>&1; then
+
+                        echo "Updating existing Lambda function"
+
+                        aws lambda update-function-code \
+                            --function-name "$LAMBDA_FUNCTION" \
+                            --zip-file fileb://lambda-deployment.zip
+
+                        aws lambda wait function-updated \
+                            --function-name "$LAMBDA_FUNCTION"
+
+                    else
+                        echo "Lambda does not exist."
+                        echo "Create it once with the approved execution role first."
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        stage('Update Configuration') {
+            steps {
+                sh '''
+                    set -eu
+
+                    aws lambda update-function-configuration \
+                        --function-name "$LAMBDA_FUNCTION" \
+                        --handler "$LAMBDA_HANDLER" \
+                        --runtime "$LAMBDA_RUNTIME" \
+                        --timeout 15 \
+                        --memory-size 128 \
+                        --environment "Variables={INSTANCE_ID=$INSTANCE_ID}"
+
+                    aws lambda wait function-updated \
+                        --function-name "$LAMBDA_FUNCTION"
+                '''
+            }
+        }
+
+        stage('Invoke Health Check') {
+            steps {
+                sh '''
+                    set -eu
+
+                    aws lambda invoke \
+                        --function-name "$LAMBDA_FUNCTION" \
+                        --cli-binary-format raw-in-base64-out \
+                        response.json
+
+                    cat response.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts(
+                artifacts: 'response.json,lambda-deployment.zip',
+                allowEmptyArchive: true
+            )
+            cleanWs()
+        }
+
+        success {
+            echo 'Lambda deployment and invocation completed.'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check Console Output for the exact error.'
         }
     }
 }
