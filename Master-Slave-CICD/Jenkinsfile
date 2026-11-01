@@ -2,11 +2,10 @@
 pipeline {
     agent { label 'Agent-1' }
 
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-        timeout(time: 15, unit: 'MINUTES')
-    }
+   options {
+    disableConcurrentBuilds()
+    timeout(time: 15, unit: 'MINUTES')
+}
 
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
