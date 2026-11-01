@@ -111,3 +111,14 @@ resource "aws_instance" "ec2"{
         Name = "Dev"
     }
 }
+
+resource "aws_instance" "ec2"{
+    ami = var.ami
+    instance_type = "t2.medium"
+    availability_zone      = "us-west-2a"
+    subnet_id = aws_subnet.Private.id
+    vpc_security_group_ids = [aws_security_group.sg.id]
+    tags={
+        Name = "web-hooks-check"
+    }
+}

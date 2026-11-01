@@ -7,10 +7,10 @@
 crash.log
 crash.*.log
 
-# Terraform variable files (sensitive data)
+# Terraform variable files
 *.tfvars
 *.tfvars.json
-!example.tfvars
+!Jenkins-Basic-CICD/terraform.tfvars
 
 # Terraform lock file
 # Keep this file committed for provider version consistency
