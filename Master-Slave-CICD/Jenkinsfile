@@ -120,7 +120,7 @@ pipeline {
                 artifacts: 'response.json,lambda-deployment.zip',
                 allowEmptyArchive: true
             )
-            cleanWs()
+            
         }
 
         success {
